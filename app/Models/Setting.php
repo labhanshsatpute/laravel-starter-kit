@@ -2,12 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Spatie\Permission\Models\Permission as SpatiePermission;
+use Illuminate\Database\Eloquent\Model;
 
-class Permission extends SpatiePermission
+class Setting extends Model
 {
     use HasFactory, HasUuids;
 
@@ -17,9 +16,8 @@ class Permission extends SpatiePermission
      * @var list<string>
      */
     protected $fillable = [
-        'name',
-        'guard_name',
+        'key',
+        'value',
         'group',
     ];
-
 }

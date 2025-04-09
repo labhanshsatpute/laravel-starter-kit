@@ -23,7 +23,7 @@
                     <h1 class="panel-card-title">Edit Information</h1>
                     <p class="panel-card-description">Please fill the required fields</p>
                 </div>
-                @can(\App\Enums\Permission::DELETE_ACCESS->value)
+                @can(\App\Enums\Permissions\AdminAccess::DELETE->value)
                 <div>
                     <button type="button" class="btn-danger-sm flex items-center justify-center" onclick="handleDelete()">
                         <span class="lg:block md:block sm:hidden mr-2">Delete</span>
@@ -132,7 +132,7 @@
         document.getElementById('admin-access-tab').classList.add('active');
 
 
-        @can(\App\Enums\Permission::DELETE_ACCESS->value)
+        @can(\App\Enums\Permissions\AdminAccess::DELETE->value)
         const handleDelete = () => {
             swal({
                     title: "Are you sure?",

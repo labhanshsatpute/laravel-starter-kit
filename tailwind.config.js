@@ -39,12 +39,6 @@ module.exports = {
               'complement': '#F4F7FE',
               'ascent': "#4361ee",
               'ascent-dark': "#3a0ca3",
-
-                'web-dominant': '#FFF',
-                'web-complement' : '#F4F7FE',
-                'web-ascent' : '#4361ee',
-                'web-ascent-dark' : '#3a0ca3',
-
           },
           boxShadow: {
               'lg': '0px 0px 12px #7F71B129',

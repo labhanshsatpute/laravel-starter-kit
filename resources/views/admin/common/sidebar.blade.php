@@ -25,7 +25,7 @@
                     </a>
                 </li>
 
-                @can(\App\Enums\Permission::VIEW_ACCESS->value)
+                @can(\App\Enums\Permissions\AdminAccess::VIEW->value)
                 <li class="sidebar-tab" id="admin-access-tab">
                     <a href="{{route('admin.view.access.list')}}">
                         <i data-feather="shield"></i>

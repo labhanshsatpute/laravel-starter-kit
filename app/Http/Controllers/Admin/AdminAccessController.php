@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\Permission;
+use App\Enums\Permissions\AdminAccess;
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
 use Exception;
@@ -46,8 +47,8 @@ class AdminAccessController extends Controller implements AdminAccessInterface
     {
         try {
 
-            $admin = Admin::find(auth()->user()->id);
-            if (!$admin->can(Permission::VIEW_ACCESS->value)) {
+            $admin = Admin::find(auth('admin')->user()->id);
+            if (!$admin->can(AdminAccess::VIEW->value)) {
                 return redirect()->back()->with('message', [
                     'status' => 'warning',
                     'title' => 'Unauthorized Access',
@@ -55,7 +56,7 @@ class AdminAccessController extends Controller implements AdminAccessInterface
                 ]);
             }
 
-            $admins = Admin::whereNot('id', auth()->user()->id)->get();
+            $admins = Admin::whereNot('id', auth('admin')->user()->id)->get();
 
             return view('admin.pages.access.access-list', [
                 'admins' => $admins
@@ -78,8 +79,8 @@ class AdminAccessController extends Controller implements AdminAccessInterface
     {
         try {
 
-            $admin = Admin::find(auth()->user()->id);
-            if (!$admin->can(Permission::ADD_ACCESS->value)) {
+            $admin = Admin::find(auth('admin')->user()->id);
+            if (!$admin->can(AdminAccess::ADD->value)) {
                 return redirect()->back()->with('message', [
                     'status' => 'warning',
                     'title' => 'Unauthorized Access',
@@ -110,8 +111,8 @@ class AdminAccessController extends Controller implements AdminAccessInterface
     {
         try {
 
-            $admin = Admin::find(auth()->user()->id);
-            if (!$admin->can(Permission::EDIT_ACCESS->value)) {
+            $admin = Admin::find(auth('admin')->user()->id);
+            if (!$admin->can(AdminAccess::EDIT->value)) {
                 return redirect()->back()->with('message', [
                     'status' => 'warning',
                     'title' => 'Unauthorized Access',
@@ -208,11 +209,17 @@ class AdminAccessController extends Controller implements AdminAccessInterface
                 ]);
             }
 
+            $password_rules = ['nullable'];
+            if ($request->input('password_change')) {
+                $password_rules = ['required', 'string', 'min:6', 'max:20', 'confirmed'];
+            }
+
             $validation = Validator::make($request->all(), [
                 'name' => ['required', 'string', 'min:1', 'max:250'],
                 'email' => ['required', 'string', 'email',  'min:1', 'max:250', Rule::unique('admins')->ignore($id)],
                 'phone' => ['required', 'numeric', 'digits_between:10,12', Rule::unique('admins')->ignore($id)],
-                'password' => ['nullable', 'string', 'min:6', 'max:20', 'confirmed'],
+                'password' => $password_rules,
+                'role_id' => ['required', 'string', 'exists:roles,id'],
             ]);
 
             if ($validation->fails()) {
@@ -226,6 +233,9 @@ class AdminAccessController extends Controller implements AdminAccessInterface
                 $admin->password = Hash::make($request->input('password'));
             }
             $admin->update();
+
+            $role = Role::find($request->input('role_id'));
+            $admin->syncRoles($role);
 
             return redirect()->route('admin.view.access.list')->with('message', [
                 'status' => 'success',
@@ -251,7 +261,7 @@ class AdminAccessController extends Controller implements AdminAccessInterface
         try {
 
             $validation = Validator::make($request->all(), [
-                'admin_id' => ['required', 'numeric', 'exists:admins,id']
+                'admin_id' => ['required', 'string', 'exists:admins,id']
             ]);
 
             if ($validation->fails()) {
@@ -289,8 +299,8 @@ class AdminAccessController extends Controller implements AdminAccessInterface
     {
         try {
 
-            $admin = Admin::find(auth()->user()->id);
-            if (!$admin->can(Permission::DELETE_ACCESS->value)) {
+            $admin = Admin::find(auth('admin')->user()->id);
+            if (!$admin->can(AdminAccess::DELETE->value)) {
                 return redirect()->back()->with('message', [
                     'status' => 'warning',
                     'title' => 'Unauthorized Access',

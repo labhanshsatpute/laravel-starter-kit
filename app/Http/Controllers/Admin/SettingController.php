@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\Gender;
 use App\Enums\Permission as EnumsPermission;
+use App\Enums\Permissions\PermissionGroup;
+use App\Enums\Permissions\Setting as PermissionsSetting;
+use App\Enums\SettingKey;
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
 use Exception;
@@ -15,6 +18,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use App\Models\Permission;
 use App\Models\Role;
+use App\Models\Setting;
 
 interface SettingInterface
 {
@@ -24,6 +28,13 @@ interface SettingInterface
     public function viewPasswordSetting();
     public function handlePasswordSetting(Request $request);
     public function viewRolePermission();
+    public function viewRoleCreate();
+    public function handleRoleCreate(Request $request);
+    public function viewRoleUpdate($id);
+    public function handleRoleUpdate(Request $request, $id);
+    public function handleRemovePermission($role_id, $permission_id);
+    public function viewApplicationSetting();
+    public function handleApplicationSetting(Request $request);
 }
 
 class SettingController extends Controller implements SettingInterface
@@ -93,11 +104,11 @@ class SettingController extends Controller implements SettingInterface
                 'name' => ['required', 'string', 'min:1', 'max:250'],
                 'email' => [
                     'required', 'string', 'min:1', 'max:250',
-                    Rule::unique('admins')->ignore(auth()->user()->id, 'id')
+                    Rule::unique('admins')->ignore(auth('admin')->user()->id, 'id')
                 ],
                 'phone' => [
                     'required', 'numeric', 'digits_between:10,20',
-                    Rule::unique('admins')->ignore(auth()->user()->id, 'id')
+                    Rule::unique('admins')->ignore(auth('admin')->user()->id, 'id')
                 ],
                 'profile_image' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp'],
                 'date_of_birth' => ['nullable', 'string', 'min:1', 'max:50'],
@@ -109,16 +120,16 @@ class SettingController extends Controller implements SettingInterface
                 return redirect()->back()->withErrors($validation)->withInput();
             }
 
-            if (Hash::check($request->input('account_password'), auth()->user()->password)) {
+            if (Hash::check($request->input('account_password'), auth('admin')->user()->password)) {
 
-                $admin = Admin::find(auth()->user()->id);
+                $admin = Admin::find(auth('admin')->user()->id);
                 $admin->name = $request->input('name');
                 $admin->email = $request->input('email');
                 $admin->phone = $request->input('phone');
                 $admin->gender = $request->input('gender');
                 $admin->date_of_birth = $request->input('date_of_birth');
                 if ($request->hasFile('profile_image')) {
-                    if (!is_null(auth()->user()->profile_image)) Storage::delete(auth()->user()->profile_image);
+                    if (!is_null(auth('admin')->user()->profile_image)) Storage::delete(auth('admin')->user()->profile_image);
                     $admin->profile_image = $request->file('profile_image')->store('admins');
                 }
                 $admin->update();
@@ -180,9 +191,9 @@ class SettingController extends Controller implements SettingInterface
                 return redirect()->back()->withErrors($validation)->withInput();
             }
 
-            if (Hash::check($request->input('current_password'), auth()->user()->password)) {
+            if (Hash::check($request->input('current_password'), auth('admin')->user()->password)) {
 
-                $admin = Admin::find(auth()->user()->id);
+                $admin = Admin::find(auth('admin')->user()->id);
                 $admin->password = Hash::make($request->input('password'));
                 $admin->update();
                 
@@ -215,8 +226,8 @@ class SettingController extends Controller implements SettingInterface
     {
         try {
 
-            $admin = Admin::find(auth()->user()->id);
-            if (!$admin->can(EnumsPermission::MANAGE_ROLES_AND_PERMISSION->value)) {
+            $admin = Admin::find(auth('admin')->user()->id);
+            if (!$admin->can(PermissionsSetting::ROLES_AND_PERMISSION->value)) {
                 return redirect()->back()->with('message', [
                     'status' => 'warning',
                     'title' => 'Unauthorized Access',
@@ -247,8 +258,8 @@ class SettingController extends Controller implements SettingInterface
     {
         try {
 
-            $admin = Admin::find(auth()->user()->id);
-            if (!$admin->can(EnumsPermission::MANAGE_ROLES_AND_PERMISSION->value)) {
+            $admin = Admin::find(auth('admin')->user()->id);
+            if (!$admin->can(PermissionsSetting::ROLES_AND_PERMISSION->value)) {
                 return redirect()->back()->with('message', [
                     'status' => 'warning',
                     'title' => 'Unauthorized Access',
@@ -256,12 +267,10 @@ class SettingController extends Controller implements SettingInterface
                 ]);
             }
 
-            $permissions = Permission::all();
-            $permissions_enums = EnumsPermission::class;
+            $permission_groups = Permission::get()->groupBy('group');
 
             return view('admin.pages.setting.role-create',[
-                'permissions' => $permissions,
-                'permissions_enums' => $permissions_enums
+                'permission_groups' => $permission_groups
             ]);
         } catch (Exception $exception) {
             return redirect()->back()->with('message', [
@@ -324,8 +333,8 @@ class SettingController extends Controller implements SettingInterface
     {
         try {
 
-            $admin = Admin::find(auth()->user()->id);
-            if (!$admin->can(EnumsPermission::MANAGE_ROLES_AND_PERMISSION->value)) {
+            $admin = Admin::find(auth('admin')->user()->id);
+            if (!$admin->can(PermissionsSetting::ROLES_AND_PERMISSION->value)) {
                 return redirect()->back()->with('message', [
                     'status' => 'warning',
                     'title' => 'Unauthorized Access',
@@ -343,15 +352,13 @@ class SettingController extends Controller implements SettingInterface
                 ]);
             }
 
-            $permissions = Permission::all();
+            $permission_groups = Permission::get()->groupBy('group');
             $role_permissions = $role->getAllPermissions();
-            $permissions_enums = EnumsPermission::class;
 
             return view('admin.pages.setting.role-update',[
                 'role' => $role,
-                'permissions' => $permissions,
+                'permission_groups' => $permission_groups,
                 'role_permissions' => $role_permissions,
-                'permissions_enums' => $permissions_enums
             ]);
         } catch (Exception $exception) {
             return redirect()->back()->with('message', [
@@ -393,13 +400,8 @@ class SettingController extends Controller implements SettingInterface
 
             $role->name = $request->input('name');
             $role->update();
-            
-            if ($request->permissions) {
-                foreach ($request->permissions as $value) {
-                    $permission = Permission::findById($value);
-                    $role->givePermissionTo($permission);
-                }
-            }
+
+            $role->syncPermissions($request->permissions);
 
             return redirect()->back()->with('message', [
                 'status' => 'success',
@@ -453,6 +455,98 @@ class SettingController extends Controller implements SettingInterface
                 'description' => 'The permission is successfully removed'
             ]);
 
+        } catch (Exception $exception) {
+            return redirect()->back()->with('message', [
+                'status' => 'error',
+                'title' => 'An error occcured',
+                'description' => $exception->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * View Application Setting
+     *
+     * @return mixed
+     */
+    public function viewApplicationSetting(): mixed 
+    {
+        try {
+
+            $genders = Gender::class;
+
+            return view('admin.pages.setting.application-setting',[
+                'genders'=> $genders
+            ]);
+        } catch (Exception $exception) {
+            return redirect()->back()->with('message', [
+                'status' => 'error',
+                'title' => 'An error occcured',
+                'description' => $exception->getMessage()
+            ]);
+        }    
+    }
+
+    /**
+     * Handle Application Setting
+     *
+     * @return RedirectResponse
+     */
+    public function handleApplicationSetting(Request $request): RedirectResponse
+    {
+        try {
+            
+            $validation = Validator::make($request->all(), [
+                'application_name' => ['required', 'string', 'min:1', 'max:250'],
+                'application_summary' => ['required', 'string', 'min:1', 'max:250'],
+                'application_logo' => ['nullable', 'file', 'mimes:jpg,jpeg,png'],
+                'application_favicon' => ['nullable', 'file', 'mimes:jpg,jpeg,png']
+            ]);
+    
+            if ($validation->fails()) {
+                return redirect()->back()->withErrors($validation)->withInput();
+            }
+
+            if ($request->hasFile('application_logo')) {
+
+                $old_logo = Setting::where('key', SettingKey::APPLICATION_LOGO->value)->first()->value;
+
+                Storage::delete($old_logo);
+
+                $new_logo = $request->file('application_logo')->storeAs('others/logo', 'logo.png');
+
+                Setting::where('key', SettingKey::APPLICATION_LOGO->value)->update([
+                    'value' => $new_logo
+                ]);
+            }
+
+            if ($request->hasFile('application_favicon')) {
+
+                $old_favicon = Setting::where('key', SettingKey::APPLICATION_FAVICON->value)->first()->value;
+                
+                Storage::delete($old_favicon);
+
+                $new_favicon = $request->file('application_favicon')->storeAs('others/favicon', 'favicon.png');
+
+                Setting::where('key', SettingKey::APPLICATION_FAVICON->value)->update([
+                    'value' => $new_favicon
+                ]);
+            }
+
+            Setting::where('key', SettingKey::APPLICATION_NAME->value)->update([
+                'value' => $request->input('application_name')
+            ]);
+
+            Setting::where('key', SettingKey::APPLICATION_SUMMARY->value)->update([
+                'value' => $request->input('application_summary')
+            ]);
+
+            return redirect()->back()->with('message', [
+                'status' => 'success',
+                'title' => 'Changes saved',
+                'description' => 'The changes are successfully saved'
+            ]);
+                
         } catch (Exception $exception) {
             return redirect()->back()->with('message', [
                 'status' => 'error',

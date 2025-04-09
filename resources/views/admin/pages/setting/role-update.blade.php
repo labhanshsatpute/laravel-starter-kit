@@ -42,42 +42,30 @@
 
                     {{-- Permissions --}}
                     <div class="space-y-2 2xl:col-span-5 md:col-span-4 sm:col-span-1">
-                        <label for="name" class="input-label">Current Permissions</label>
-                        <div class="flex flex-wrap gap-3">
-                            @foreach ($role_permissions as $permission)
-                                @foreach ($permissions_enums::cases() as $enum)
-                                    @if ($enum->value == $permission->name)
-                                        <div
-                                            class="text-xs px-3 py-1.5 font-medium rounded-md bg-ascent bg-opacity-10 flex items-center justify-center space-x-1">
-                                            <span>{{ $enum->label() }}</span>
-                                            <a class="h-3.5 w-3.5 flex items-center justify-center bg-red-500 text-white rounded-full"
-                                                href="javascript:handleRemovePermission('{{ $permission->id }}');">&times;</a>
-                                        </div>
-                                    @endif
-                                @endforeach
-                            @endforeach
-                        </div>
-                    </div>
-
-                    <div class="space-y-2 2xl:col-span-5 md:col-span-4 sm:col-span-1">
-                        <hr>
-                    </div>
-
-                    {{-- Permissions --}}
-                    <div class="space-y-2 2xl:col-span-5 md:col-span-4 sm:col-span-1">
-                        @foreach ($permissions as $permission)
-                            <div class="input-radio">
-                                <input type="checkbox" name="permissions[]" value="{{ $permission->id }}"
-                                    id="permission_{{ $permission->name }}">
-                                <label for="permission_{{ $permission->name }}">
-                                    @foreach ($permissions_enums::cases() as $enum)
-                                        @if ($enum->value == $permission->name)
-                                            {{ $enum->label() }}
-                                        @endif
+                        <label for="name" class="input-label">Permissions <em>*</em></label>
+                        <div class="overflow-x-scroll">
+                            <table class="border">
+                                @foreach ($permission_groups as $key => $permission_group)
+                                <tr>
+                                    <td class="border py-2 px-3" colspan="4">
+                                        <h6 class="font-medium">{{ucwords(str_replace('_',' ',strtolower($key)))}}</h6>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    @foreach ($permission_group as $permission)
+                                    <td class="border py-2 px-3">
+                                        <div class="input-radio">
+                                                <input @checked($role->hasPermissionTo($permission)) type="checkbox" name="permissions[]" value="{{$permission->id}}" id="permission_{{$permission->name}}">
+                                            <label for="permission_{{$permission->name}}">
+                                            {{ucwords(str_replace('_',' ',strtolower($permission->name)))}}
+                                            </label>
+                                        </div>        
+                                    </td>
                                     @endforeach
-                                </label>
-                            </div>
-                        @endforeach
+                                </tr>
+                                @endforeach
+                            </table>
+                        </div>
                         @error('permissions')
                             <span class="input-error">{{ $message }}</span>
                         @enderror

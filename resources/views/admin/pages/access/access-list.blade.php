@@ -19,7 +19,7 @@
             <h1 class="panel-card-title">Admin Access</h1>
             <p class="panel-card-description">List of all admins access in the system</p>
         </div>
-        @can(\App\Enums\Permission::ADD_ACCESS->value)
+        @can(\App\Enums\Permissions\AdminAccess::ADD->value)
         <div>
             <a href="{{ route('admin.view.access.create') }}" class="btn-primary-sm flex">
                 <span class="lg:block md:block sm:hidden mr-2">Add Access</span>
@@ -36,7 +36,7 @@
                     <th>Name</th>
                     <th>Email</th>
                     <th>Phone</th>
-                    @can(\App\Enums\Permission::EDIT_ACCESS->value)
+                    @can(\App\Enums\Permissions\AdminAccess::EDIT->value)
                     <th>Status</th>
                     @endcan
                     <th>Role</th>
@@ -49,7 +49,7 @@
                             <td>{{ $admin->name }}</td>
                             <td>{{ $admin->email }}</td>
                             <td>{{ $admin->phone }}</td>
-                            @can(\App\Enums\Permission::EDIT_ACCESS->value)
+                            @can(\App\Enums\Permissions\AdminAccess::EDIT->value)
                             <td>
                                 <label class="toggler-switch">
                                     <input onchange="handleUpdateStatus('{{$admin->id}}')" @checked($admin->status) type="checkbox">
@@ -65,11 +65,11 @@
                                     <button>Options<i data-feather="chevron-down" class="ml-1 toggler-icon"></i></button>
                                     <div class="dropdown-menu">
                                         <ul>
-                                            @can(\App\Enums\Permission::EDIT_ACCESS->value)
+                                            @can(\App\Enums\Permissions\AdminAccess::EDIT->value)
                                             <li><a href="{{route('admin.view.access.update',['id' => $admin->id])}}" class="dropdown-link-primary"><i data-feather="edit" class="mr-1"></i> Edit Admin Access</a></li>
                                             @endcan
 
-                                            @can(\App\Enums\Permission::DELETE_ACCESS->value)
+                                            @can(\App\Enums\Permissions\AdminAccess::DELETE->value)
                                             <li><a href="javascript:handleDelete('{{$admin->id}}');" class="dropdown-link-danger"><i data-feather="trash-2" class="mr-1"></i> Delete Admin Access</a></li>
                                             @endcan
 
@@ -112,7 +112,7 @@
             });
         }
 
-        @can(\App\Enums\Permission::DELETE_ACCESS->value)
+        @can(\App\Enums\Permissions\AdminAccess::DELETE->value)
         const handleDelete = (id) => {
             swal({
                     title: "Are you sure?",
@@ -123,7 +123,7 @@
                 })
                 .then((willDelete) => {
                     if (willDelete) {
-                        window.location = `{{ url('admin/admin-access/delete') }}/${id}`;
+                        window.location = `{{ url('admin/access/delete') }}/${id}`;
                     }
                 });
         }

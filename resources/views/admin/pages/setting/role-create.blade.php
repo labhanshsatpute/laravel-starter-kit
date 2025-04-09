@@ -41,18 +41,30 @@
                     
                     {{-- Permissions --}}
                     <div class="space-y-2 2xl:col-span-5 md:col-span-4 sm:col-span-1">
-                        @foreach ($permissions as $permissions)
-                        <div class="input-radio">
-                            <input type="checkbox" name="permissions[]" value="{{$permissions->id}}" id="permission_{{$permissions->name}}">
-                            <label for="permission_{{$permissions->name}}">
-                                @foreach ($permissions_enums::cases() as $enum)
-                                @if ($enum->value == $permissions->name)
-                                {{$enum->label()}}
-                                @endif
+                        <label for="name" class="input-label">Permissions <em>*</em></label>
+                        <div class="overflow-x-scroll">
+                            <table class="border">
+                                @foreach ($permission_groups as $key => $permission_group)
+                                <tr>
+                                    <td class="border py-2 px-3" colspan="4">
+                                        <h6 class="font-medium">{{ucwords(str_replace('_',' ',strtolower($key)))}}</h6>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    @foreach ($permission_group as $permission)
+                                    <td class="border py-2 px-3">
+                                        <div class="input-radio">
+                                                <input type="checkbox" name="permissions[]" value="{{$permission->id}}" id="permission_{{$permission->name}}">
+                                            <label for="permission_{{$permission->name}}">
+                                            {{ucwords(str_replace('_',' ',strtolower($permission->name)))}}
+                                            </label>
+                                        </div>        
+                                    </td>
+                                    @endforeach
+                                </tr>
                                 @endforeach
-                            </label>
-                        </div>        
-                        @endforeach
+                            </table>
+                        </div>
                         @error('permissions')
                             <span class="input-error">{{ $message }}</span>
                         @enderror
